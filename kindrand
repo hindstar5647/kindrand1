@@ -1,0 +1,1164 @@
+-- =====================================================================
+-- MAIN GUI — PURE BLACK
+-- =====================================================================
+local csStart, csStop
+
+local function buildMainGUI()
+    local SG=Instance.new("ScreenGui")
+    SG.Name="VOIDH" SG.ResetOnSpawn=false SG.IgnoreGuiInset=true SG.DisplayOrder=100 SG.Parent=PG
+
+    local vp = WS.CurrentCamera and WS.CurrentCamera.ViewportSize or Vector2.new(1280,720)
+    local isM = IS_MOBILE
+
+    local W,H = 520,560
+    local MIN_SCALE = 0.62
+    local baseSize = UDim2.new(0,W,0,H)
+    local basePos = UDim2.new(.5,-W/2,.5,-H/2)
+
+    local PAD = isM and 8 or 14
+    local HEADER_H = isM and 46 or 56
+    local TAB_H = isM and 30 or 32
+    local TAB_GAP = 3
+    local CONTENT_TOP = HEADER_H + PAD + TAB_H + (isM and 8 or 12)
+
+    local holder=Instance.new("Frame")
+    holder.Name="Holder" holder.BackgroundTransparency=1
+    holder.Size=UDim2.new(1,0,1,0) holder.Position=UDim2.new(0,0,0,0) holder.Parent=SG
+    local uiscale=Instance.new("UIScale") uiscale.Parent=holder
+
+    local MF=Instance.new("Frame")
+    MF.BackgroundColor3=C.panel MF.BorderSizePixel=0 MF.Active=true
+    MF.Size=baseSize MF.Position=basePos MF.Parent=holder
+    corner(MF,8) stroke(MF,C.stroke,1) MF.ClipsDescendants=true
+    registerThemed(MF, "panel")
+
+    local panelOpen=false
+    local function openP()
+        if panelOpen then return end
+        panelOpen=true play(SND.open) MF.Visible=true
+        if uiscale.Scale ~= 1 then
+            uiscale.Scale=0
+            TW:Create(uiscale, TweenInfo.new(.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Scale=1}):Play()
+        end
+    end
+    local function closeP()
+        if not panelOpen then return end
+        panelOpen=false play(SND.close) MF.Visible=false
+    end
+
+    -- HEADER
+    local HD=Instance.new("Frame")
+    HD.Size=UDim2.new(1,0,0,HEADER_H) HD.BackgroundColor3=C.panel2 HD.BorderSizePixel=0 HD.Parent=MF HD.ZIndex=2
+    registerThemed(HD, "panel2")
+
+    -- thin bottom divider
+    local hDiv=Instance.new("Frame")
+    hDiv.Size=UDim2.new(1,0,0,1) hDiv.Position=UDim2.new(0,0,1,-1)
+    hDiv.BackgroundColor3=C.stroke hDiv.BorderSizePixel=0 hDiv.ZIndex=3 hDiv.Parent=HD
+
+    local hTitle=L(HD,"VOID",isM and 15 or 17,C.tx,FB)
+    hTitle.Size=UDim2.new(1,-320,0,20) hTitle.Position=UDim2.new(0,PAD,0,isM and 8 or 12) hTitle.ZIndex=3
+    local hSub=L(HD,"v9.7.0 · black edition",9,C.tx3,F)
+    hSub.Size=UDim2.new(1,-320,0,12) hSub.Position=UDim2.new(0,PAD,0,isM and 26 or 34) hSub.ZIndex=3
+
+    local XSIZE=isM and 28 or 26
+    local XGAP=6
+    local PILL_W=isM and 60 or 66
+    local PILL_H=20
+    local HUD_H=22 HUD_GAP=6
+    local FPS_BOX_W=isM and 40 or 44 PING_BOX_W=isM and 40 or 44
+    local HUD_W=FPS_BOX_W+HUD_GAP+PING_BOX_W
+    local rightMargin=10
+    local closeRight=-rightMargin
+    local hudRight=-(rightMargin+XSIZE+XGAP)
+    local pillRight=-(rightMargin+XSIZE+XGAP+HUD_W+XGAP)
+
+    -- status pill
+    local pill=Instance.new("Frame")
+    pill.Size=UDim2.new(0,PILL_W,0,PILL_H) pill.AnchorPoint=Vector2.new(1,0)
+    pill.Position=UDim2.new(1,pillRight,0,(HEADER_H-PILL_H)/2)
+    pill.BackgroundColor3=C.input pill.BorderSizePixel=0 pill.ZIndex=3 pill.Parent=HD
+    corner(pill,10) stroke(pill,C.stroke,1) registerThemed(pill, "input")
+    local pillDot=Instance.new("Frame")
+    pillDot.Size=UDim2.new(0,5,0,5) pillDot.Position=UDim2.new(0,8,0.5,-2.5)
+    pillDot.BackgroundColor3=C.tx3 pillDot.BorderSizePixel=0 pillDot.ZIndex=4 pillDot.Parent=pill
+    corner(pillDot,3)
+    local pillTxt=L(pill,"idle",9,C.tx2,FM)
+    pillTxt.Size=UDim2.new(1,-16,1,0) pillTxt.Position=UDim2.new(0,16,0,0) pillTxt.ZIndex=4
+
+    -- HUD (FPS + PING)
+    local hudBox=Instance.new("Frame")
+    hudBox.BackgroundTransparency=1 hudBox.ZIndex=3 hudBox.AnchorPoint=Vector2.new(1,0)
+    hudBox.Position=UDim2.new(1,hudRight,0,(HEADER_H-HUD_H)/2)
+    hudBox.Size=UDim2.new(0,HUD_W,0,HUD_H) hudBox.Parent=HD
+
+    local fpsBox=Instance.new("Frame")
+    fpsBox.BackgroundColor3=C.input fpsBox.BorderSizePixel=0
+    fpsBox.Size=UDim2.new(0,FPS_BOX_W,1,0) fpsBox.Parent=hudBox fpsBox.ZIndex=3 corner(fpsBox,4) stroke(fpsBox,C.stroke,1)
+    registerThemed(fpsBox, "input")
+    local fpsVal=L(fpsBox,"60",isM and 10 or 11,C.tx,FB)
+    fpsVal.Size=UDim2.new(1,0,0,11) fpsVal.Position=UDim2.new(0,0,0,1) fpsVal.TextXAlignment=Enum.TextXAlignment.Center fpsVal.ZIndex=4
+    local fpsLbl=L(fpsBox,"FPS",7,C.tx3,FM)
+    fpsLbl.Size=UDim2.new(1,0,0,7) fpsLbl.Position=UDim2.new(0,0,0,12) fpsLbl.TextXAlignment=Enum.TextXAlignment.Center fpsLbl.ZIndex=4
+
+    local pingBox=Instance.new("Frame")
+    pingBox.BackgroundColor3=C.input pingBox.BorderSizePixel=0
+    pingBox.Size=UDim2.new(0,PING_BOX_W,1,0) pingBox.Position=UDim2.new(0,FPS_BOX_W+HUD_GAP,0,0)
+    pingBox.Parent=hudBox pingBox.ZIndex=3 corner(pingBox,4) stroke(pingBox,C.stroke,1)
+    registerThemed(pingBox, "input")
+    local pingVal=L(pingBox,"0",isM and 10 or 11,C.tx,FB)
+    pingVal.Size=UDim2.new(1,0,0,11) pingVal.Position=UDim2.new(0,0,0,1) pingVal.TextXAlignment=Enum.TextXAlignment.Center pingVal.ZIndex=4
+    local pingLbl=L(pingBox,"MS",7,C.tx3,FM)
+    pingLbl.Size=UDim2.new(1,0,0,7) pingLbl.Position=UDim2.new(0,0,0,12) pingLbl.TextXAlignment=Enum.TextXAlignment.Center pingLbl.ZIndex=4
+
+    registerUIPoller(function()
+        local f=fps_val local p=ping_val
+        local fs=tostring(f) if fpsVal.Text~=fs then fpsVal.Text=fs end
+        local ps=tostring(p) if pingVal.Text~=ps then pingVal.Text=ps end
+        if f>=50 then fpsVal.TextColor3=C.tx elseif f>=30 then fpsVal.TextColor3=C.wn else fpsVal.TextColor3=C.bd end
+        if p<=80 then pingVal.TextColor3=C.tx elseif p<=200 then pingVal.TextColor3=C.wn else pingVal.TextColor3=C.bd end
+    end)
+
+    -- close button
+    local XB=BTN(HD,"×",C.input,C.tx2)
+    XB.Size=UDim2.new(0,XSIZE,0,XSIZE) XB.AnchorPoint=Vector2.new(1,0)
+    XB.Position=UDim2.new(1,closeRight,0,(HEADER_H-XSIZE)/2)
+    XB.TextSize=isM and 18 or 16 XB.ZIndex=3
+    setBase(XB) hov(XB) registerThemed(XB, "input")
+    onClick(XB, function() closeP() end)
+
+    -- TABS
+    local TB=Instance.new("Frame")
+    TB.Size=UDim2.new(1,-PAD*2,0,TAB_H) TB.Position=UDim2.new(0,PAD,0,HEADER_H+PAD)
+    TB.BackgroundTransparency=1 TB.Parent=MF TB.ZIndex=2
+    local TL=Instance.new("UIListLayout")
+    TL.FillDirection=Enum.FillDirection.Horizontal TL.Padding=UDim.new(0,TAB_GAP) TL.Parent=TB
+
+    local tabOrder={"fling","move","chat","others"}
+    local tabName={fling="Target",move="Move",chat="Chat",others="Others"}
+    local tabs={} local pages={}
+    local tabW=math.floor((W-PAD*2-TAB_GAP*3)/4)
+
+    for i,n in ipairs(tabOrder) do
+        local b=BTN(TB,tabName[n],C.panel,C.tx2)
+        b.Size=UDim2.new(0,tabW,1,0) b.LayoutOrder=i b.TextSize=isM and 10 or 11 b.ZIndex=3
+        b.BackgroundTransparency=1
+        setBase(b) hov(b) tabs[n]=b registerThemed(b, "panel")
+
+        -- underline indicator (hidden by default)
+        local ul=Instance.new("Frame")
+        ul.Name="indicator"
+        ul.Size=UDim2.new(0.5,0,0,2) ul.Position=UDim2.new(0.25,0,1,-2)
+        ul.BackgroundColor3=C.accent ul.BorderSizePixel=0 ul.ZIndex=4 ul.Visible=false
+        ul.Parent=b corner(ul,1)
+
+        local p=Instance.new("ScrollingFrame")
+        p.Size=UDim2.new(1,-PAD*2,1,CONTENT_TOP) p.Position=UDim2.new(0,PAD,0,CONTENT_TOP)
+        p.BackgroundTransparency=1 p.Visible=false p.Parent=MF
+        p.BorderSizePixel=0 p.ScrollBarThickness=3 p.ScrollBarImageColor3=C.stroke2
+        p.CanvasSize=UDim2.new(0,0,0,600) p.ScrollingEnabled=true
+        p.ScrollingDirection=Enum.ScrollingDirection.Y p.ElasticBehavior=Enum.ElasticBehavior.WhenScrollable p.ZIndex=2
+        pages[n]=p
+    end
+
+    -- drag state
+    local currentDrag = nil
+    local pillDrag = nil
+    local pillStartClock = 0
+    local headerDrag = nil
+    local activeSliderUpdate = nil
+
+    UIS.InputChanged:Connect(function(i)
+        if i.UserInputType ~= Enum.UserInputType.Touch and i.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+        if currentDrag == "pill" and pillDrag then
+            local d = i.Position - pillDrag.startI
+            if math.abs(d.X) > 4 or math.abs(d.Y) > 4 then pillDrag.moved = true end
+            if pillDrag.moved then
+                local nx = pillDrag.startP.X + d.X
+                local ny = pillDrag.startP.Y + d.Y
+                local maxX = vp.X - pillDrag.startSize.X
+                local maxY = vp.Y - pillDrag.startSize.Y
+                if maxX < 0 then maxX = 0 end if maxY < 0 then maxY = 0 end
+                nx = math.clamp(nx, 0, maxX) ny = math.clamp(ny, 0, maxY)
+                pillDrag.target.Position = UDim2.new(0, nx, 0, ny)
+            end
+        elseif currentDrag == "header" and headerDrag then
+            local scale = uiscale.Scale
+            if scale <= 0.01 then scale = 0.01 end
+            local d = i.Position - headerDrag.startI
+            local nx = (headerDrag.startScreen.X + d.X) / scale
+            local ny = (headerDrag.startScreen.Y + d.Y) / scale
+            local maxX = (vp.X / scale) - W
+            local maxY = (vp.Y / scale) - H
+            if maxX < 0 then maxX = 0 end if maxY < 0 then maxY = 0 end
+            nx = math.clamp(nx, 0, maxX) ny = math.clamp(ny, 0, maxY)
+            MF.Position = UDim2.new(0, nx, 0, ny)
+        elseif currentDrag == "slider" and activeSliderUpdate then
+            activeSliderUpdate(i)
+        end
+    end)
+
+    HD.InputBegan:Connect(function(i)
+        if i.UserInputType==Enum.UserInputType.Touch or i.UserInputType==Enum.UserInputType.MouseButton1 then
+            headerDrag = { startI = i.Position, startScreen = MF.AbsolutePosition }
+            currentDrag = "header"
+        end
+    end)
+    HD.InputEnded:Connect(function(i)
+        if i.UserInputType==Enum.UserInputType.Touch or i.UserInputType==Enum.UserInputType.MouseButton1 then
+            headerDrag = nil
+            if currentDrag == "header" then currentDrag = nil end
+        end
+    end)
+
+    local built = {}
+    local tabBuilders = {}
+
+    local function switchTo(n)
+        play(SND.tab)
+        for k,v in pairs(tabs) do
+            local ind=v:FindFirstChild("indicator")
+            if k==n then
+                v.TextColor3=C.tx v.BackgroundColor3=C.panel2 v:SetAttribute("baseColor",C.panel2)
+                local s=v:FindFirstChildOfClass("UIStroke") if s then s.Color=C.stroke end
+                if ind then ind.Visible=true end
+            else
+                v.TextColor3=C.tx2 v.BackgroundColor3=C.panel v:SetAttribute("baseColor",C.panel)
+                local s=v:FindFirstChildOfClass("UIStroke") if s then s.Color=C.stroke end
+                if ind then ind.Visible=false end
+            end
+        end
+        for k,v in pairs(pages) do v.Visible = (k==n) end
+        if not built[n] and tabBuilders[n] then
+            built[n] = true
+            tabBuilders[n]()
+        end
+    end
+
+    for i,n in ipairs(tabOrder) do
+        local b = tabs[n]
+        local _last = 0
+        b.MouseButton1Click:Connect(function()
+            local now = tick()
+            if now - _last < 0.2 then return end
+            _last = now
+            switchTo(n)
+        end)
+    end
+
+    local innerW = W - PAD*2
+
+    -- ---------------------------------------------------------------
+    -- FLING TAB
+    -- ---------------------------------------------------------------
+    tabBuilders.fling = function()
+        local fp=pages.fling
+        fp.CanvasSize=UDim2.new(0,0,0,400)
+        local faRow=Instance.new("Frame")
+        faRow.Size=UDim2.new(1,0,0,54) faRow.BackgroundColor3=C.panel2 faRow.BorderSizePixel=0 faRow.Parent=fp
+        corner(faRow,6) stroke(faRow,C.stroke,1) registerThemed(faRow, "panel2")
+
+        local faTitle=L(faRow,"Fling All",12,C.tx,FM)
+        faTitle.Size=UDim2.new(1,-146,0,14) faTitle.Position=UDim2.new(0,14,0,11)
+        faStatus=L(faRow,"idle",10,C.tx3,F)
+        faStatus.Size=UDim2.new(1,-146,0,12) faStatus.Position=UDim2.new(0,14,0,28)
+
+        local faSB=BTN(faRow,"Start",C.accentD)
+        faSB.Size=UDim2.new(0,58,0,28) faSB.Position=UDim2.new(1,-132,0,13)
+        setBase(faSB) hov(faSB) registerThemed(faSB, "accentD")
+        local faXB=BTN(faRow,"Stop",C.input,C.tx2)
+        faXB.Size=UDim2.new(0,58,0,28) faXB.Position=UDim2.new(1,-68,0,13)
+        setBase(faXB) hov(faXB) registerThemed(faXB, "input")
+        onClick(faSB,function() play(SND.on) faStart() end)
+        onClick(faXB,function() play(SND.off) faStop() end)
+
+        local faWLlbl=L(fp,"Whitelist · comma separated",9,C.tx3,F)
+        faWLlbl.Size=UDim2.new(1,0,0,12) faWLlbl.Position=UDim2.new(0,0,0,64)
+        faWLBox=B(fp,"names to skip")
+        faWLBox.Size=UDim2.new(1,0,0,26) faWLBox.Position=UDim2.new(0,0,0,78) faWLBox.TextSize=10
+        faWLBox.Changed:Connect(function(prop)
+            if prop~="Text" then return end
+            faWL={}
+            for n in string.gmatch(faWLBox.Text, "[^,]+") do
+                local c=string.lower(string.gsub(string.gsub(n,"^%s+",""),"%s+$",""))
+                if c~="" then faWL[c]=true end
+            end
+        end)
+
+        local div1=Instance.new("Frame")
+        div1.Size=UDim2.new(1,0,0,1) div1.Position=UDim2.new(0,0,0,116) div1.BackgroundColor3=C.stroke div1.Parent=fp
+
+        local fTitle=L(fp,"Single Target",12,C.tx,FM)
+        fTitle.Size=UDim2.new(1,0,0,14) fTitle.Position=UDim2.new(0,0,0,126)
+        local fST=L(fp,"idle",10,C.tx3,F)
+        fST.Size=UDim2.new(1,0,0,12) fST.Position=UDim2.new(0,0,0,142)
+
+        local fCard=Instance.new("Frame")
+        fCard.Size=UDim2.new(1,0,0,68) fCard.Position=UDim2.new(0,0,0,160)
+        fCard.BackgroundColor3=C.panel2 fCard.BorderSizePixel=0 fCard.Parent=fp
+        corner(fCard,6) stroke(fCard,C.stroke,1) registerThemed(fCard, "panel2")
+
+        local AV=Instance.new("ImageLabel")
+        AV.Size=UDim2.new(0,48,0,48) AV.Position=UDim2.new(0,10,0,10)
+        AV.BackgroundColor3=C.input AV.BorderSizePixel=0 AV.Parent=fCard
+        corner(AV,6) stroke(AV,C.stroke,1) registerThemed(AV, "input")
+
+        local NL=L(fCard,"No target",12,C.tx,FM)
+        NL.Size=UDim2.new(1,-70,0,14) NL.Position=UDim2.new(0,70,0,9)
+        local UL=L(fCard,"—",10,C.tx3,F)
+        UL.Size=UDim2.new(1,-70,0,12) UL.Position=UDim2.new(0,70,0,26)
+        local AL=L(fCard,"age —",10,C.tx3,F)
+        AL.Size=UDim2.new(0,100,0,12) AL.Position=UDim2.new(0,70,0,44)
+        local FL=L(fCard,"friends —",10,C.tx3,F)
+        FL.Size=UDim2.new(0,130,0,12) FL.Position=UDim2.new(1,-140,0,44)
+
+        local TSTAT=L(fp,"",9,C.tx3,F)
+        TSTAT.Size=UDim2.new(1,0,0,12) TSTAT.Position=UDim2.new(0,0,0,232)
+
+        local actGap=6
+        local actW=math.floor((innerW-actGap*3)/4)
+        local headFlingBtn=BTN(fp,"Head",C.input,C.tx2)
+        headFlingBtn.Size=UDim2.new(0,actW,0,30) headFlingBtn.Position=UDim2.new(0,0,0,250)
+        setBase(headFlingBtn) hov(headFlingBtn) registerThemed(headFlingBtn, "input")
+        local torsoFlingBtn=BTN(fp,"Torso",C.input,C.tx2)
+        torsoFlingBtn.Size=UDim2.new(0,actW,0,30) torsoFlingBtn.Position=UDim2.new(0,actW+actGap,0,250)
+        setBase(torsoFlingBtn) hov(torsoFlingBtn) registerThemed(torsoFlingBtn, "input")
+        local tpBtn=BTN(fp,"Teleport",C.input,C.tx2)
+        tpBtn.Size=UDim2.new(0,actW,0,30) tpBtn.Position=UDim2.new(0,(actW+actGap)*2,0,250)
+        setBase(tpBtn) hov(tpBtn) registerThemed(tpBtn, "input")
+        local spBtn=BTN(fp,"Spectate",C.input,C.tx2)
+        spBtn.Size=UDim2.new(0,actW,0,30) spBtn.Position=UDim2.new(0,(actW+actGap)*3,0,250)
+        setBase(spBtn) hov(spBtn) registerThemed(spBtn, "input")
+
+        local function setToggle(b,on)
+            if on then
+                b.BackgroundColor3=C.accentD b:SetAttribute("baseColor",C.accentD) b.TextColor3=C.tx
+                local s=b:FindFirstChildOfClass("UIStroke") if s then s.Color=C.accent end
+            else
+                b.BackgroundColor3=C.input b:SetAttribute("baseColor",C.input) b.TextColor3=C.tx2
+                local s=b:FindFirstChildOfClass("UIStroke") if s then s.Color=C.stroke end
+            end
+        end
+
+        local function stopSpec()
+            specOn=false
+            if specConn then specConn:Disconnect() specConn=nil end
+            local cam=WS.CurrentCamera
+            if cam then local h=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid") if h then cam.CameraSubject=h end end
+            setToggle(spBtn, false)
+        end
+        local function startSpec()
+            if not sel then play(SND.error) fST.Text="no target" fST.TextColor3=C.bd return end
+            local cam=WS.CurrentCamera if not cam then return end
+            specOn=true if specConn then specConn:Disconnect() end
+            specConn=RS.RenderStepped:Connect(function()
+                if not specOn or not sel then return end
+                local cam=WS.CurrentCamera if not cam then return end
+                local hb=tRoot(activeFlingMode)
+                if hb and hb.Parent and cam.CameraSubject~=hb then cam.CameraSubject=hb end
+            end)
+            setToggle(spBtn, true) play(SND.on)
+        end
+
+        onClick(tpBtn,function()
+            if not sel then play(SND.error) fST.Text="no target" fST.TextColor3=C.bd return end
+            local hb=tRoot(activeFlingMode)
+            if not hb then play(SND.error) fST.Text="hitbox not loaded" fST.TextColor3=C.bd return end
+            local c=LP.Character if not c then return end local mr=c:FindFirstChild("HumanoidRootPart") if not mr then return end
+            local h=c:FindFirstChildOfClass("Humanoid") if h then if h.PlatformStand then h.PlatformStand=false end if h.Sit then h.Sit=false end end
+            mr.CFrame=CFrame.new(hb.Position+Vector3.new(0,3,0))
+            mr.AssemblyLinearVelocity=Vector3.zero mr.AssemblyAngularVelocity=Vector3.zero
+            play(SND.success) fST.Text="teleported · "..sel.Name fST.TextColor3=C.tx
+        end)
+
+        local function stopFlingUI()
+            wantFling=false autoRefling=false stopFling()
+            avStop() akStop() agpStop() if csStop then csStop() end
+            setToggle(headFlingBtn, false) setToggle(torsoFlingBtn, false)
+            fST.Text="stopped" fST.TextColor3=C.tx3 play(SND.off)
+        end
+
+        local function forceRoastChatStart()
+            csMode = "roast" csSym = "AT"
+            csTgt = resolveTargetDisplay() or ""
+            if _G.__VOIDChatSetBtn then _G.__VOIDChatSetBtn.Text="@" end
+            if _G.__VOIDChatTargetBox and csTgt ~= "" then _G.__VOIDChatTargetBox.Text = csTgt end
+            if csStart then pcall(csStart)
+            else task.delay(0.4, function() if csStart then pcall(csStart) end end) end
+        end
+
+        local function startFlingUI(mode)
+            if flinging then
+                if activeFlingMode==mode then stopFlingUI() return else stopFlingUI() task.wait(.05) end
+            end
+            if not sel and not selName then play(SND.error) fST.Text="select a target first" fST.TextColor3=C.bd return end
+            if faOn then faStop() end
+            if not sel then
+                wantFling=true activeFlingMode=mode autoRefling=true
+                setToggle(headFlingBtn, mode=="head") setToggle(torsoFlingBtn, mode=="torso")
+                fST.Text="armed · waiting for "..(selName or "target") fST.TextColor3=C.wn
+                play(SND.success) return
+            end
+            wantFling=true autoRefling=true
+            startFling(mode) avStart() akStart() agpStart() forceRoastChatStart()
+            setToggle(headFlingBtn, mode=="head") setToggle(torsoFlingBtn, mode=="torso")
+            fST.Text=mode=="head" and "head hitbox fling" or "torso hitbox fling" fST.TextColor3=C.tx play(SND.on)
+        end
+
+        onClick(headFlingBtn, function() startFlingUI("head") end)
+        onClick(torsoFlingBtn, function() startFlingUI("torso") end)
+        onClick(spBtn, function() if specOn then play(SND.off) stopSpec() else startSpec() end end)
+
+        local tgtLbl=L(fp,"Target username · press Enter",9,C.tx3,F)
+        tgtLbl.Size=UDim2.new(1,0,0,12) tgtLbl.Position=UDim2.new(0,0,0,290)
+        local tgtInput=B(fp,"enter username")
+        tgtInput.Size=UDim2.new(1,0,0,30) tgtInput.Position=UDim2.new(0,0,0,304) tgtInput.TextSize=11
+        local tgtHint=L(fp,"",9,C.tx3,F)
+        tgtHint.Size=UDim2.new(1,0,0,12) tgtHint.Position=UDim2.new(0,0,0,338)
+
+        local lastHintState = nil
+        registerUIPoller(function()
+            local joined = sel ~= nil
+            local offline = (not sel) and (selName ~= nil or selId ~= nil)
+            if joined then
+                local inS=false for _,p in ipairs(P:GetPlayers()) do if p==sel then inS=true break end end
+                if not inS then joined = false; offline = true end
+            end
+            local state = joined and "joined" or (offline and "offline" or "none")
+            if state ~= lastHintState then
+                lastHintState = state
+                if state == "joined" and (flinging or wantFling) then
+                    tgtHint.Text = "target joined · flinging hitbox" tgtHint.TextColor3 = C.tx
+                elseif state == "joined" then
+                    tgtHint.Text = "target joined · ready" tgtHint.TextColor3 = C.tx
+                elseif state == "offline" then
+                    tgtHint.Text = "target offline · auto-fling on join" tgtHint.TextColor3 = C.wn
+                else
+                    tgtHint.Text = "" tgtHint.TextColor3 = C.tx3
+                end
+            end
+            if not sel then
+                if selName then TSTAT.Text="target left · "..selName TSTAT.TextColor3=C.bd
+                elseif selId then TSTAT.Text="target left" TSTAT.TextColor3=C.bd
+                elseif TSTAT.Text~="" then TSTAT.Text="" end
+                return
+            end
+            local inS=false for _,p in ipairs(P:GetPlayers()) do if p==sel then inS=true break end end
+            if not inS then TSTAT.Text="target left" TSTAT.TextColor3=C.bd return end
+            local c=sel.Character if not c then TSTAT.Text="respawning…" TSTAT.TextColor3=C.wn return end
+            local h=c:FindFirstChildOfClass("Humanoid") if not h then TSTAT.Text="no humanoid" TSTAT.TextColor3=C.wn return end
+            if h.Health<=0 then TSTAT.Text="target dead" TSTAT.TextColor3=C.wn return end
+            if inVoid then TSTAT.Text="hitbox in void — following" TSTAT.TextColor3=C.tx return end
+            local ping=0 pcall(function() ping=math.floor(sel:GetNetworkPing()*1000) end)
+            TSTAT.Text="hitbox active · "..ping.."ms" TSTAT.TextColor3=C.tx
+        end)
+
+        local function selectByName(rawName)
+            if not rawName or rawName=="" then play(SND.error) fST.Text="enter a username" fST.TextColor3=C.bd tgtHint.Text="" return end
+            local name=string.gsub(rawName,"^%s+","") name=string.gsub(name,"%s+$","")
+            if name=="" then play(SND.error) fST.Text="enter a username" fST.TextColor3=C.bd return end
+            local found=nil
+            for _,p in ipairs(P:GetPlayers()) do if p~=LP and string.lower(p.Name)==string.lower(name) then found=p break end end
+            if not found then for _,p in ipairs(P:GetPlayers()) do if p~=LP and string.lower(p.DisplayName)==string.lower(name) then found=p break end end end
+            if not found then
+                local matches={}
+                for _,p in ipairs(P:GetPlayers()) do
+                    if p~=LP and string.lower(p.Name):sub(1,#name)==string.lower(name) then table.insert(matches,p) end
+                end
+                if #matches==1 then found=matches[1]
+                elseif #matches>1 then play(SND.error) fST.Text="ambiguous — "..#matches.." players" fST.TextColor3=C.wn return end
+            end
+            if not found then
+                sel=nil selName=name selDisplay=name tgtJoinState="offline"
+                play(SND.success) fST.Text="waiting for · "..name fST.TextColor3=C.wn
+                tgtHint.Text="target offline · auto-fling on join" tgtHint.TextColor3=C.wn
+                tgtInput.Text=name
+                if _G.__VOIDChatTargetBox then _G.__VOIDChatTargetBox.Text=name end
+                task.spawn(function()
+                    local matched=nil
+                    pcall(function()
+                        local body=HS:JSONEncode({usernames={name}, excludeBannedUsers=false})
+                        local res=HS:PostAsync("https://users.roblox.com/v1/usernames/users", body, Enum.HttpContentType.ApplicationJson)
+                        local decoded=HS:JSONDecode(res)
+                        if decoded.data and decoded.data[1] then matched=decoded.data[1] end
+                    end)
+                    if not matched then return end
+                    selId=matched.id selDisplay=matched.displayName or name
+                    NL.Text=matched.displayName or name UL.Text="@"..(matched.name or name)
+                    AL.Text="age —" FL.Text="friends —"
+                    pcall(function() AV.Image=P:GetUserThumbnailAsync(matched.id, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100) end)
+                    pcall(function()
+                        local r=HS:GetAsync("https://users.roblox.com/v1/users/"..matched.id)
+                        local d=HS:JSONDecode(r)
+                        if d.created then
+                            local c=DateTime.fromISO(d.created)
+                            local days=(DateTime.now().UnixTimestamp-c.UnixTimestamp)/86400
+                            if days<30 then AL.Text="age "..math.floor(days).."d"
+                            elseif days<365 then AL.Text="age "..math.floor(days/30).."mo"
+                            else AL.Text="age "..math.floor(days/365).."y" end
+                        end
+                    end)
+                    pcall(function()
+                        local r=HS:GetAsync("https://friends.roblox.com/v1/users/"..matched.id.."/friends/count")
+                        local d=HS:JSONDecode(r)
+                        if d.count then FL.Text="friends "..d.count end
+                    end)
+                    if _G.__VOIDChatTargetBox then _G.__VOIDChatTargetBox.Text=matched.displayName or name end
+                end)
+                return
+            end
+            sel=found selId=found.UserId selName=found.Name selDisplay=found.DisplayName tgtJoinState="joined"
+            play(SND.success) fST.Text="target · "..found.Name fST.TextColor3=C.tx
+            NL.Text=found.DisplayName UL.Text="@"..found.Name
+            AL.Text="age —" FL.Text="friends —"
+            tgtHint.Text="target joined · ready" tgtHint.TextColor3=C.tx
+            tgtInput.Text=found.Name
+            if _G.__VOIDChatTargetBox then _G.__VOIDChatTargetBox.Text=found.DisplayName end
+            pcall(function() AV.Image=P:GetUserThumbnailAsync(found.UserId,Enum.ThumbnailType.HeadShot,Enum.ThumbnailSize.Size100x100) end)
+            task.spawn(function()
+                pcall(function()
+                    local r=HS:GetAsync("https://users.roblox.com/v1/users/"..found.UserId)
+                    local d=HS:JSONDecode(r)
+                    if d.created then
+                        local c=DateTime.fromISO(d.created)
+                        local days=(DateTime.now().UnixTimestamp-c.UnixTimestamp)/86400
+                        if days<30 then AL.Text="age "..math.floor(days).."d"
+                        elseif days<365 then AL.Text="age "..math.floor(days/30).."mo"
+                        else AL.Text="age "..math.floor(days/365).."y" end
+                    end
+                end)
+                pcall(function()
+                    local r=HS:GetAsync("https://friends.roblox.com/v1/users/"..found.UserId.."/friends/count")
+                    local d=HS:JSONDecode(r)
+                    if d.count then FL.Text="friends "..d.count end
+                end)
+            end)
+        end
+
+        tgtInput.FocusLost:Connect(function(enterPressed) if enterPressed then play(SND.click) selectByName(tgtInput.Text) end end)
+        tgtInput:GetPropertyChangedSignal("Text"):Connect(function()
+            if not sel and not selName then tgtHint.Text="" tgtHint.TextColor3=C.tx3 end
+        end)
+
+        P.PlayerRemoving:Connect(function(p)
+            if sel==p then
+                selId = p.UserId selName = p.Name selDisplay = p.DisplayName
+                sel = nil tgtJoinState = "offline"
+                tgtHint.Text = "target offline · auto-fling on join" tgtHint.TextColor3 = C.wn
+                clearHitbox(p) if autoRefling then wantFling = true end
+            end
+            if specOn then stopSpec() end
+        end)
+        P.PlayerAdded:Connect(function(p)
+            local match=(selId and p.UserId==selId)
+                or (selName and string.lower(p.Name)==string.lower(selName))
+                or (selDisplay and string.lower(p.DisplayName)==string.lower(selDisplay))
+            if match and not sel then
+                sel=p selId=p.UserId selName=p.Name selDisplay=p.DisplayName tgtJoinState="joined"
+                play(SND.success) fST.Text="joined · "..p.Name fST.TextColor3=C.tx
+                NL.Text=p.DisplayName UL.Text="@"..p.Name tgtInput.Text=p.Name
+                if _G.__VOIDChatTargetBox then _G.__VOIDChatTargetBox.Text=p.DisplayName end
+                pcall(function() AV.Image=P:GetUserThumbnailAsync(p.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100) end)
+                task.wait(.5)
+                if autoRefling then
+                    wantFling = true
+                    if not flinging then
+                        startFling(activeFlingMode) avStart() akStart() agpStart() forceRoastChatStart()
+                        setToggle(headFlingBtn, activeFlingMode=="head") setToggle(torsoFlingBtn, activeFlingMode=="torso")
+                        fST.Text=(activeFlingMode=="head" and "head hitbox fling · " or "torso hitbox fling · ")..p.Name
+                        fST.TextColor3=C.tx
+                        tgtHint.Text = "target joined · flinging hitbox" tgtHint.TextColor3 = C.tx
+                    end
+                end
+            end
+        end)
+    end
+
+    -- ---------------------------------------------------------------
+    -- MOVE TAB
+    -- ---------------------------------------------------------------
+    tabBuilders.move = function()
+        local mp=pages.move
+        mp.CanvasSize=UDim2.new(0,0,0,360)
+        local wsLbl=L(mp,"Walk Speed",12,C.tx,FM)
+        wsLbl.Size=UDim2.new(1,0,0,14) wsLbl.Position=UDim2.new(0,0,0,0)
+
+        local wC=Instance.new("Frame")
+        wC.Size=UDim2.new(1,0,0,120) wC.Position=UDim2.new(0,0,0,20)
+        wC.BackgroundColor3=C.panel2 wC.BorderSizePixel=0 wC.Parent=mp
+        corner(wC,6) stroke(wC,C.stroke,1) registerThemed(wC, "panel2")
+
+        local wL=L(wC,"current · 16",10,C.tx3,F)
+        wL.Size=UDim2.new(1,-16,0,12) wL.Position=UDim2.new(0,12,0,10)
+        local wB=B(wC,"16") wB.Size=UDim2.new(0,70,0,30) wB.Position=UDim2.new(0,12,0,32) wB.TextSize=11
+        local wToggle=BTN(wC,"OFF",C.input,C.tx2)
+        wToggle.Size=UDim2.new(0,110,0,30) wToggle.Position=UDim2.new(0,90,0,32) wToggle.TextSize=11
+        setBase(wToggle) hov(wToggle) registerThemed(wToggle, "input")
+
+        local wDiv=Instance.new("Frame")
+        wDiv.Size=UDim2.new(1,-24,0,1) wDiv.Position=UDim2.new(0,12,0,72) wDiv.BackgroundColor3=C.stroke wDiv.Parent=wC
+
+        local wBindLbl=L(wC,"hotkey",10,C.tx3,F)
+        wBindLbl.Size=UDim2.new(0,60,0,24) wBindLbl.Position=UDim2.new(0,12,0,84)
+        local wBindBtn=BTN(wC,"—",C.input,C.tx2)
+        wBindBtn.Size=UDim2.new(0,80,0,24) wBindBtn.Position=UDim2.new(0,64,0,84) wBindBtn.TextSize=11
+        setBase(wBindBtn) hov(wBindBtn) registerThemed(wBindBtn, "input")
+
+        local function wsBindLabel() local h=HOTKEYS.walkspeed return h and h.key and keyName(h.key) or "—" end
+        _G.__wsBindBtn=wBindBtn _G.__wsBindLabel=wsBindLabel wBindBtn.Text=wsBindLabel()
+
+        local function updateWalkBtn()
+            if wsOn then
+                wToggle.Text="ON" wToggle.BackgroundColor3=C.accentD wToggle:SetAttribute("baseColor",C.accentD) wToggle.TextColor3=C.tx
+                local s=wToggle:FindFirstChildOfClass("UIStroke") if s then s.Color=C.accent end
+            else
+                wToggle.Text="OFF" wToggle.BackgroundColor3=C.input wToggle:SetAttribute("baseColor",C.input) wToggle.TextColor3=C.tx2
+                local s=wToggle:FindFirstChildOfClass("UIStroke") if s then s.Color=C.stroke end
+            end
+        end
+
+        wB.FocusLost:Connect(function(enter)
+            if enter then
+                local n=tonumber(wB.Text)
+                if n and n>0 and n<=1000 then wsVal=n if wsOn then applyWS() end wL.Text="current · "..n
+                else wB.Text=tostring(wsVal) end
+            end
+        end)
+
+        local function toggleWalk()
+            if wsOn then
+                play(SND.off) wsOn=false
+                local h=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+                if h then
+                    h.WalkSpeed=DEFAULT_WALKSPEED
+                    if h.PlatformStand then h.PlatformStand=false end
+                    if h.Sit then h.Sit=false end
+                    pcall(function() h:ChangeState(Enum.HumanoidStateType.Running) end)
+                end
+                wL.Text="current · "..DEFAULT_WALKSPEED
+            else
+                play(SND.on)
+                local n=tonumber(wB.Text)
+                if n and n>0 and n<=1000 then wsVal=n else wsVal=DEFAULT_WALKSPEED end
+                wsOn=true
+                local h=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+                if h then
+                    if h.PlatformStand then h.PlatformStand=false end
+                    if h.Sit then h.Sit=false end
+                    h.WalkSpeed=wsVal
+                    pcall(function() h:ChangeState(Enum.HumanoidStateType.Running) end)
+                end
+                wL.Text="current · "..wsVal
+            end
+            updateWalkBtn()
+        end
+        onClick(wToggle, toggleWalk)
+        registerHotkey("walkspeed", Enum.KeyCode.F)
+        HOTKEYS.walkspeed.fn=toggleWalk updateWalkBtn()
+
+        local flyLbl=L(mp,"Fly",12,C.tx,FM)
+        flyLbl.Size=UDim2.new(1,0,0,14) flyLbl.Position=UDim2.new(0,0,0,154)
+
+        local fC=Instance.new("Frame")
+        fC.Size=UDim2.new(1,0,0,200) fC.Position=UDim2.new(0,0,0,174)
+        fC.BackgroundColor3=C.panel2 fC.BorderSizePixel=0 fC.Parent=mp
+        corner(fC,6) stroke(fC,C.stroke,1) registerThemed(fC, "panel2")
+
+        local fS=L(fC,"status · off",10,C.tx3,F)
+        fS.Size=UDim2.new(1,-16,0,12) fS.Position=UDim2.new(0,12,0,10)
+        local fSL=L(fC,"speed · 50",10,C.tx3,F)
+        fSL.Size=UDim2.new(1,-16,0,12) fSL.Position=UDim2.new(0,12,0,26)
+        local fSB=B(fC,"50") fSB.Size=UDim2.new(0,70,0,30) fSB.Position=UDim2.new(0,12,0,44) fSB.TextSize=11
+
+        local fToggle=BTN(fC,"OFF",C.input,C.tx2)
+        fToggle.Size=UDim2.new(0,110,0,30) fToggle.Position=UDim2.new(0,90,0,44) fToggle.TextSize=11
+        setBase(fToggle) hov(fToggle) registerThemed(fToggle, "input")
+
+        local fDiv=Instance.new("Frame")
+        fDiv.Size=UDim2.new(1,-24,0,1) fDiv.Position=UDim2.new(0,12,0,84) fDiv.BackgroundColor3=C.stroke fDiv.Parent=fC
+
+        local fBindLbl=L(fC,"hotkey",10,C.tx3,F)
+        fBindLbl.Size=UDim2.new(0,60,0,24) fBindLbl.Position=UDim2.new(0,12,0,96)
+        local fBindBtn=BTN(fC,"—",C.input,C.tx2)
+        fBindBtn.Size=UDim2.new(0,80,0,24) fBindBtn.Position=UDim2.new(0,64,0,96) fBindBtn.TextSize=11
+        setBase(fBindBtn) hov(fBindBtn) registerThemed(fBindBtn, "input")
+
+        local function flyBindLabel() local h=HOTKEYS.fly return h and h.key and keyName(h.key) or "—" end
+        _G.__flyBindBtn=fBindBtn _G.__flyBindLabel=flyBindLabel fBindBtn.Text=flyBindLabel()
+
+        local function updateFlyBtn()
+            if flyOn then
+                fToggle.Text="ON" fToggle.BackgroundColor3=C.accentD fToggle:SetAttribute("baseColor",C.accentD) fToggle.TextColor3=C.tx
+                local s=fToggle:FindFirstChildOfClass("UIStroke") if s then s.Color=C.accent end
+            else
+                fToggle.Text="OFF" fToggle.BackgroundColor3=C.input fToggle:SetAttribute("baseColor",C.input) fToggle.TextColor3=C.tx2
+                local s=fToggle:FindFirstChildOfClass("UIStroke") if s then s.Color=C.stroke end
+            end
+        end
+
+        local fALB=L(fC,"animation id",10,C.tx3,F)
+        fALB.Size=UDim2.new(1,-16,0,12) fALB.Position=UDim2.new(0,12,0,130)
+        local fAB=B(fC,"rbxassetid://...")
+        fAB.Size=UDim2.new(1,-140,0,28) fAB.Position=UDim2.new(0,12,0,148)
+        fAB.Text="rbxassetid://913402848" fAB.TextSize=10
+
+        local fApplyAnim=BTN(fC,"Apply Anim",C.input,C.tx2)
+        fApplyAnim.Size=UDim2.new(0,110,0,28) fApplyAnim.Position=UDim2.new(1,-122,0,148) fApplyAnim.TextSize=10
+        setBase(fApplyAnim) hov(fApplyAnim) registerThemed(fApplyAnim, "input")
+
+        fSB.FocusLost:Connect(function(enter)
+            if enter then
+                local n=tonumber(fSB.Text)
+                if n and n>0 and n<=500 then flySpd=n fSL.Text="speed · "..n
+                else fSB.Text=tostring(flySpd) end
+            end
+        end)
+
+        onClick(fApplyAnim, function()
+            local txt=fAB.Text
+            if txt and txt~="" then
+                flyAnimId=txt
+                if flyOn then
+                    stopFlyAnim() task.wait(.1)
+                    local ok=startFlyAnim()
+                    if ok then play(SND.success) else play(SND.error) end
+                else
+                    local ok=startFlyAnim()
+                    if ok then play(SND.success) stopFlyAnim() else play(SND.error) end
+                end
+            end
+        end)
+
+        local function toggleFly()
+            if flyOn then
+                play(SND.off) stopFly() fS.Text="status · off" fS.TextColor3=C.tx3
+            else
+                play(SND.on)
+                local n=tonumber(fSB.Text)
+                if n and n>0 and n<=500 then flySpd=n fSL.Text="speed · "..n end
+                startFly()
+                if flyAnimOn then fS.Text="status · on" fS.TextColor3=C.tx
+                else fS.Text="status · on (no anim)" fS.TextColor3=C.wn end
+            end
+            updateFlyBtn()
+        end
+        onClick(fToggle, toggleFly)
+        registerHotkey("fly", Enum.KeyCode.G)
+        HOTKEYS.fly.fn=toggleFly updateFlyBtn()
+
+        local function armBind(which, btn)
+            if ARMED_BIND==which then
+                ARMED_BIND=nil
+                btn.Text=(which=="walkspeed") and _G.__wsBindLabel() or _G.__flyBindLabel()
+                play(SND.off) return
+            end
+            ARMED_BIND=which btn.Text="press…" play(SND.on)
+        end
+        onClick(wBindBtn, function() armBind("walkspeed", wBindBtn) end)
+        onClick(fBindBtn, function() armBind("fly", fBindBtn) end)
+    end
+
+    -- ---------------------------------------------------------------
+    -- CHAT TAB
+    -- ---------------------------------------------------------------
+    tabBuilders.chat = function()
+        local cp=pages.chat
+        cp.CanvasSize=UDim2.new(0,0,0,400)
+        local csST=L(cp,"idle",10,C.tx3,F)
+        csST.Size=UDim2.new(1,0,0,12) csST.Position=UDim2.new(0,0,0,0)
+
+        local cTB=Instance.new("Frame")
+        cTB.Size=UDim2.new(1,0,0,30) cTB.Position=UDim2.new(0,0,0,20) cTB.BackgroundTransparency=1 cTB.Parent=cp
+        local cTL=Instance.new("UIListLayout")
+        cTL.FillDirection=Enum.FillDirection.Horizontal cTL.Padding=UDim.new(0,4) cTL.Parent=cTB
+
+        local cT={}
+        local cN={"clan","message","roast"}
+        local cL={clan="Clan",message="Message",roast="Roast"}
+        local modeW=math.floor((innerW-8)/3)
+
+        local cTLB=L(cp,"target",9,C.tx3,F)
+        cTLB.Size=UDim2.new(1,0,0,12) cTLB.Position=UDim2.new(0,0,0,58)
+        local cTBX=B(cp,"target name")
+        cTBX.Size=UDim2.new(1,0,0,30) cTBX.Position=UDim2.new(0,0,0,74)
+        _G.__VOIDChatTargetBox=cTBX
+        local cMLB=L(cp,"message",9,C.tx3,F)
+        cMLB.Size=UDim2.new(1,0,0,12) cMLB.Position=UDim2.new(0,0,0,58) cMLB.Visible=false
+        local cMBX=B(cp,"message")
+        cMBX.Size=UDim2.new(1,0,0,30) cMBX.Position=UDim2.new(0,0,0,74) cMBX.Visible=false
+
+        for i,n in ipairs(cN) do
+            local b=BTN(cTB,cL[n],C.panel3,C.tx2)
+            b.Size=UDim2.new(0,modeW,1,0) b.LayoutOrder=i b.TextSize=isM and 10 or 11
+            cT[n]=b setBase(b) hov(b) registerThemed(b, "panel3")
+            if n==csMode then
+                b.BackgroundColor3=C.accentS b:SetAttribute("baseColor",C.accentS) b.TextColor3=C.tx
+            end
+            local function switch()
+                play(SND.tab) csMode=n
+                for k,v in pairs(cT) do
+                    if k==n then
+                        v.BackgroundColor3=C.accentS v:SetAttribute("baseColor",C.accentS) v.TextColor3=C.tx
+                    else
+                        v.BackgroundColor3=C.panel3 v:SetAttribute("baseColor",C.panel3) v.TextColor3=C.tx2
+                    end
+                end
+                cTLB.Visible=(n~="message") cTBX.Visible=(n~="message")
+                cMLB.Visible=(n=="message") cMBX.Visible=(n=="message")
+            end
+            b.MouseButton1Click:Connect(switch)
+        end
+
+        local cSBLbl=L(cp,"character set",9,C.tx3,F)
+        cSBLbl.Size=UDim2.new(1,0,0,12) cSBLbl.Position=UDim2.new(0,0,0,114)
+        local cSB=BTN(cp,"@",C.input,C.tx)
+        cSB.Size=UDim2.new(1,0,0,30) cSB.Position=UDim2.new(0,0,0,130)
+        cSB.TextSize=11 cSB.TextXAlignment=Enum.TextXAlignment.Left
+        pad(cSB,10,0,10,0) setBase(cSB) hov(cSB) registerThemed(cSB, "input")
+        _G.__VOIDChatSetBtn=cSB
+
+        local ddH=math.min(140,math.max(90,H-CONTENT_TOP-280))
+        local cDD=Instance.new("ScrollingFrame")
+        cDD.Size=UDim2.new(1,0,0,ddH) cDD.Position=UDim2.new(0,0,0,162)
+        cDD.BackgroundColor3=C.panel2 cDD.BorderSizePixel=0
+        cDD.ScrollBarThickness=3 cDD.ScrollBarImageColor3=C.stroke2
+        cDD.CanvasSize=UDim2.new(0,0,0,#CS_K*26+8)
+        cDD.Visible=false cDD.ZIndex=40 cDD.Parent=cp
+        cDD.ScrollingDirection=Enum.ScrollingDirection.Y
+        corner(cDD,6) stroke(cDD,C.stroke,1) registerThemed(cDD, "panel2")
+
+        for i,k in ipairs(CS_K) do
+            local ob=BTN(cDD,CS_L[k],C.panel2,C.tx2)
+            ob.Size=UDim2.new(1,-8,0,22) ob.Position=UDim2.new(0,4,0,(i-1)*26+4)
+            ob.TextSize=11 ob.TextXAlignment=Enum.TextXAlignment.Left
+            pad(ob,10,0,10,0) ob.ZIndex=41 setBase(ob) hov(ob)
+            onClick(ob,function() csSym=k csIdx=1 cSB.Text=CS_L[k] cDD.Visible=false cDO=false end)
+        end
+
+        local cDO=false
+        onClick(cSB,function() play(cDO and SND.close or SND.open) cDO=not cDO cDD.Visible=cDO end)
+
+        local cBtnY=162+ddH+12
+        local cSt=BTN(cp,"Start",C.accentD)
+        cSt.Size=UDim2.new(0,110,0,32) cSt.Position=UDim2.new(0,0,0,cBtnY)
+        setBase(cSt) hov(cSt) registerThemed(cSt, "accentD")
+        local cSp=BTN(cp,"Stop",C.input,C.tx2)
+        cSp.Size=UDim2.new(0,110,0,32) cSp.Position=UDim2.new(0,118,0,cBtnY)
+        setBase(cSp) hov(cSp) registerThemed(cSp, "input")
+
+        local cRowY=cBtnY+42
+        local cS1=L(cp,"—",10,C.tx3,F)
+        cS1.Size=UDim2.new(.33,0,0,12) cS1.Position=UDim2.new(0,0,0,cRowY) cS1.TextXAlignment=Enum.TextXAlignment.Center
+        local cS2=L(cp,"0",10,C.tx3,F)
+        cS2.Size=UDim2.new(.33,0,0,12) cS2.Position=UDim2.new(.33,0,0,cRowY) cS2.TextXAlignment=Enum.TextXAlignment.Center
+        local cS3=L(cp,"AT",10,C.tx3,F)
+        cS3.Size=UDim2.new(.33,0,0,12) cS3.Position=UDim2.new(.66,0,0,cRowY) cS3.TextXAlignment=Enum.TextXAlignment.Center
+
+        cp.CanvasSize=UDim2.new(0,0,0,cRowY+40)
+
+        local function csLoop(gen)
+            local cachedDisplay = resolveTargetDisplay()
+            while csOn and csGen==gen do
+                cachedDisplay = resolveTargetDisplay() or cachedDisplay
+                local m=bld()
+                if m~="" then
+                    if snd2(m) then
+                        csCnt+=1 cS2.Text=tostring(csCnt)
+                        cS1.Text=csMtd cS3.Text=csSym
+                        csST.Text="running · "..csMtd csST.TextColor3=C.tx
+                    else csST.Text="failed to send" csST.TextColor3=C.bd end
+                end
+                task.wait(CS_D)
+            end
+        end
+
+        csStart=function()
+            if csOn then return end
+            csTgt=cTBX.Text csMsg=cMBX.Text
+            if csMode=="roast" then
+                local resolved = resolveTargetDisplay()
+                if resolved then csTgt = resolved end
+                if csTgt=="" or csTgt==nil then
+                    if _G.__VOIDChatTargetBox then csTgt = _G.__VOIDChatTargetBox.Text end
+                end
+                if (csTgt=="" or csTgt==nil) then
+                    play(SND.error) csST.Text="enter a target" csST.TextColor3=C.bd return
+                end
+                cTBX.Text = csTgt
+            end
+            if csMode=="message" and csMsg=="" then play(SND.error) csST.Text="enter a message" csST.TextColor3=C.bd return end
+            if csMode~="message" and (csTgt=="" or csTgt==nil) then play(SND.error) csST.Text="enter a target" csST.TextColor3=C.bd return end
+            play(SND.on) csOn=true csGen=csGen+1 csST.Text="running · roast" csST.TextColor3=C.tx
+            cS3.Text = csSym
+            local g=csGen task.spawn(function() csLoop(g) end)
+        end
+        csStop=function()
+            csOn=false csGen=csGen+1 csST.Text="stopped" csST.TextColor3=C.tx3
+        end
+
+        onClick(cSt, csStart)
+        onClick(cSp, function() play(SND.off) if csStop then csStop() end end)
+    end
+
+    -- ---------------------------------------------------------------
+    -- OTHERS TAB
+    -- ---------------------------------------------------------------
+    tabBuilders.others = function()
+        local ap=pages.others
+        ap.CanvasSize=UDim2.new(0,0,0,900)
+        local avcTitle=L(ap,"Voice Bypass",12,C.tx,FM)
+        avcTitle.Size=UDim2.new(1,0,0,14) avcTitle.Position=UDim2.new(0,0,0,0)
+
+        local avcCard=Instance.new("Frame")
+        avcCard.Size=UDim2.new(1,0,0,48) avcCard.Position=UDim2.new(0,0,0,20)
+        avcCard.BackgroundColor3=C.panel2 avcCard.BorderSizePixel=0 avcCard.Parent=ap
+        corner(avcCard,6) stroke(avcCard,C.stroke,1) registerThemed(avcCard, "panel2")
+
+        local avcL=L(avcCard,"Anti VC",10,C.tx,FM)
+        avcL.Size=UDim2.new(1,-100,0,12) avcL.Position=UDim2.new(0,10,0,8)
+        local avcD=L(avcCard,"blocks VC gesture locks",8,C.tx3,F)
+        avcD.Size=UDim2.new(1,-100,0,10) avcD.Position=UDim2.new(0,10,0,22)
+
+        local avcBtn=BTN(avcCard,"Off",C.input,C.tx2)
+        avcBtn.Size=UDim2.new(0,60,0,24) avcBtn.Position=UDim2.new(1,-70,0,12)
+        setBase(avcBtn) hov(avcBtn) registerThemed(avcBtn, "input")
+
+        local avcLoaded=false avcOnToggle=false
+        onClick(avcBtn, function()
+            avcOnToggle=not avcOnToggle
+            if avcOnToggle then
+                avcBtn.Text="On" avcBtn.BackgroundColor3=C.accentD avcBtn:SetAttribute("baseColor",C.accentD)
+                local s=avcBtn:FindFirstChildOfClass("UIStroke") if s then s.Color=C.accent end
+                if not avcLoaded then
+                    avcLoaded=true
+                    pcall(function()
+                        loadstring(game:HttpGet("https://gist.githubusercontent.com/akashbhondu/157416db937268169e8a4a1b42547540/raw/3ba28974476051db60898a6bdff670a3271c140d/anti%2520vc"))()
+                    end)
+                end
+                play(SND.on)
+            else
+                avcBtn.Text="Off" avcBtn.BackgroundColor3=C.input avcBtn:SetAttribute("baseColor",C.input)
+                local s=avcBtn:FindFirstChildOfClass("UIStroke") if s then s.Color=C.stroke end
+                play(SND.off)
+            end
+        end)
+
+        local aTitle=L(ap,"Panel Background Color",12,C.tx,FM)
+        aTitle.Size=UDim2.new(1,0,0,14) aTitle.Position=UDim2.new(0,0,0,84)
+        local aSub=L(ap,"pick a custom color for the panel",9,C.tx3,F)
+        aSub.Size=UDim2.new(1,0,0,12) aSub.Position=UDim2.new(0,0,0,100)
+
+        local swatch=Instance.new("Frame")
+        swatch.Size=UDim2.new(1,0,0,40) swatch.Position=UDim2.new(0,0,0,118)
+        swatch.BackgroundColor3=C.panel swatch.BorderSizePixel=0 swatch.Parent=ap
+        corner(swatch,8) stroke(swatch,C.stroke,1) registerThemed(swatch, "panel")
+
+        local swatchLbl=L(swatch,"current panel color",10,C.tx2,FM)
+        swatchLbl.Size=UDim2.new(1,-16,1,0) swatchLbl.Position=UDim2.new(0,12,0,0)
+
+        local currentR,currentG,currentB=C.panel.R*255,C.panel.G*255,C.panel.B*255
+        local function updateCustomColor()
+            C.panel=Color3.fromRGB(currentR,currentG,currentB)
+            swatch.BackgroundColor3=C.panel
+            swatchLbl.Text=string.format("RGB(%d, %d, %d)",currentR,currentG,currentB)
+            for _,e in ipairs(themedElements) do
+                if e.inst and e.inst.Parent and e.key=="panel" then e.inst.BackgroundColor3=C.panel end
+            end
+        end
+
+        local function makeSlider(yPos,label,color,initial,onChanged)
+            local container=Instance.new("Frame")
+            container.Size=UDim2.new(1,0,0,28) container.Position=UDim2.new(0,0,0,yPos)
+            container.BackgroundColor3=C.panel2 container.BorderSizePixel=0 container.Parent=ap
+            corner(container,5) stroke(container,C.stroke,1) registerThemed(container, "panel2")
+
+            local lbl=L(container,label,10,C.tx,FM)
+            lbl.Size=UDim2.new(0,24,1,0) lbl.Position=UDim2.new(0,10,0,0)
+
+            local track=Instance.new("Frame")
+            track.Size=UDim2.new(1,-100,0,6) track.Position=UDim2.new(0,40,.5,-3)
+            track.BackgroundColor3=C.input track.BorderSizePixel=0 track.Parent=container
+            corner(track,3)
+
+            local fill=Instance.new("Frame")
+            fill.Size=UDim2.new(math.clamp(initial/255,0,1),0,1,0)
+            fill.BackgroundColor3=color fill.BorderSizePixel=0 fill.Parent=track
+            corner(fill,3)
+
+            local val=L(container,tostring(math.floor(initial)),10,C.tx,FM)
+            val.Size=UDim2.new(0,40,1,0) val.Position=UDim2.new(1,-46,0,0) val.TextXAlignment=Enum.TextXAlignment.Right
+
+            local function updateFromInput(input)
+                local trackAbs=track.AbsolutePosition local trackSz=track.AbsoluteSize
+                if trackSz.X<=0 then return end
+                local relX=math.clamp(input.Position.X-trackAbs.X,0,trackSz.X)
+                local v=math.floor((relX/trackSz.X)*255+0.5)
+                fill.Size=UDim2.new(relX/trackSz.X,0,1,0)
+                val.Text=tostring(v)
+                onChanged(v)
+            end
+
+            track.InputBegan:Connect(function(i)
+                if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then
+                    activeSliderUpdate=updateFromInput
+                    currentDrag="slider"
+                    updateFromInput(i)
+                end
+            end)
+            track.InputEnded:Connect(function(i)
+                if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then
+                    activeSliderUpdate=nil
+                    if currentDrag=="slider" then currentDrag=nil end
+                end
+            end)
+
+            return {frame=container, setValue=function(v)
+                fill.Size=UDim2.new(math.clamp(v/255,0,1),0,1,0)
+                val.Text=tostring(v)
+            end}
+        end
+
+        local rSlider=makeSlider(168,"R",Color3.fromRGB(255,100,100),currentR,function(v) currentR=v updateCustomColor() end)
+        local gSlider=makeSlider(200,"G",Color3.fromRGB(100,255,120),currentG,function(v) currentG=v updateCustomColor() end)
+        local bSlider=makeSlider(232,"B",Color3.fromRGB(120,140,255),currentB,function(v) currentB=v updateCustomColor() end)
+
+        local presetLbl=L(ap,"Quick Colors",12,C.tx,FM)
+        presetLbl.Size=UDim2.new(1,0,0,14) presetLbl.Position=UDim2.new(0,0,0,268)
+
+        local presetColors={
+            {name="Black",  col=Color3.fromRGB(5,5,5)},
+            {name="Ink",    col=Color3.fromRGB(11,11,11)},
+            {name="Ash",    col=Color3.fromRGB(22,22,22)},
+            {name="Graphite",col=Color3.fromRGB(30,30,30)},
+            {name="Night",  col=Color3.fromRGB(8,8,12)},
+            {name="Coal",   col=Color3.fromRGB(14,13,12)},
+        }
+
+        local pcW=math.floor((innerW-5*5)/6)
+        for i,pc in ipairs(presetColors) do
+            local pb=BTN(ap,pc.name,pc.col,C.tx)
+            pb.Size=UDim2.new(0,pcW,0,30) pb.Position=UDim2.new(0,(i-1)*(pcW+5),0,286)
+            pb.TextSize=9 setBase(pb) hov(pb)
+            onClick(pb, function()
+                currentR=pc.col.R*255 currentG=pc.col.G*255 currentB=pc.col.B*255
+                rSlider.setValue(math.floor(currentR)) gSlider.setValue(math.floor(currentG)) bSlider.setValue(math.floor(currentB))
+                updateCustomColor() play(SND.success)
+            end)
+        end
+
+        local shaderLbl=L(ap,"UI Themes",12,C.tx,FM)
+        shaderLbl.Size=UDim2.new(1,0,0,14) shaderLbl.Position=UDim2.new(0,0,0,328)
+        local shaderSub=L(ap,"full theme presets · tap to apply",9,C.tx3,F)
+        shaderSub.Size=UDim2.new(1,0,0,12) shaderSub.Position=UDim2.new(0,0,0,344)
+
+        local shaderNames={"Black","Ash","Obsidian","Coal"}
+        local shaderBtnW=math.floor((innerW-5*3)/4)
+        for i,sname in ipairs(shaderNames) do
+            local col=(i-1)%4
+            local sb=BTN(ap,sname,C.panel3,C.tx)
+            sb.Size=UDim2.new(0,shaderBtnW,0,32) sb.Position=UDim2.new(0,col*(shaderBtnW+5),0,364)
+            sb.TextSize=10 setBase(sb) hov(sb)
+            local preview=SHADERS[sname]
+            if preview and preview.accent then
+                sb.BackgroundColor3=preview.accentS
+                sb:SetAttribute("baseColor", sb.BackgroundColor3)
+            end
+            onClick(sb, function()
+                applyShader(sname)
+                currentR=C.panel.R*255 currentG=C.panel.G*255 currentB=C.panel.B*255
+                rSlider.setValue(math.floor(currentR)) gSlider.setValue(math.floor(currentG)) bSlider.setValue(math.floor(currentB))
+                swatch.BackgroundColor3=C.panel
+                swatchLbl.Text=string.format("shader · %s",sname)
+                play(SND.success)
+            end)
+        end
+
+        ap.CanvasSize=UDim2.new(0,0,0,420)
+    end
+
+    -- ---------------------------------------------------------------
+    -- Floating pill
+    -- ---------------------------------------------------------------
+    local pillW=isM and 76 or 110
+    local pillH=34
+    local TG=BTN(SG,"VOID",C.panel2,C.tx)
+    TG.Size=UDim2.new(0,pillW,0,pillH)
+    local vpNow = WS.CurrentCamera and WS.CurrentCamera.ViewportSize or vp
+    local initPillX = math.max(0, vpNow.X - pillW - 14)
+    local initPillY = math.max(0, vpNow.Y - pillH - 14)
+    TG.Position=UDim2.new(0, initPillX, 0, initPillY)
+    TG.TextSize=11 setFont(TG,FM) TG.BackgroundTransparency=0
+    setBase(TG) hov(TG) registerThemed(TG, "panel2")
+
+    TG.InputBegan:Connect(function(i)
+        if i.UserInputType==Enum.UserInputType.Touch or i.UserInputType==Enum.UserInputType.MouseButton1 then
+            local abs = TG.AbsolutePosition
+            pillDrag = {
+                startI = i.Position,
+                startP = Vector2.new(abs.X, abs.Y),
+                startSize = TG.AbsoluteSize,
+                moved = false,
+                target = TG,
+            }
+            pillStartClock = tick()
+            currentDrag = "pill"
+        end
+    end)
+    TG.InputEnded:Connect(function(i)
+        if i.UserInputType==Enum.UserInputType.Touch or i.UserInputType==Enum.UserInputType.MouseButton1 then
+            local wasDrag = pillDrag and pillDrag.moved
+            pillDrag = nil
+            if currentDrag == "pill" then currentDrag = nil end
+            if not wasDrag and (tick() - pillStartClock) < 0.6 then
+                if panelOpen then closeP() else openP() end
+            end
+        end
+    end)
+
+    -- activate default tab
+    for k,v in pairs(tabs) do
+        local ind=v:FindFirstChild("indicator")
+        if k=="fling" then
+            v.TextColor3=C.tx v.BackgroundColor3=C.panel2 v:SetAttribute("baseColor",C.panel2)
+            local s=v:FindFirstChildOfClass("UIStroke") if s then s.Color=C.stroke end
+            if ind then ind.Visible=true end
+        else
+            v.TextColor3=C.tx2 v.BackgroundColor3=C.panel v:SetAttribute("baseColor",C.panel)
+            if ind then ind.Visible=false end
+        end
+    end
+    pages.fling.Visible=true
+    built.fling = true
+    tabBuilders.fling()
+
+    MF.Visible=false
+    openP()
+
+    local lastPillActive=nil
+    registerUIPoller(function()
+        local active = flinging or faOn or flyOn or wsOn or csOn or agpOn or avOn or akOn
+        if active ~= lastPillActive then
+            lastPillActive = active
+            if active then
+                pillDot.BackgroundColor3=C.accent pillTxt.Text="active" pillTxt.TextColor3=C.tx
+            else
+                pillDot.BackgroundColor3=C.tx3 pillTxt.Text="idle" pillTxt.TextColor3=C.tx2
+            end
+        end
+    end)
+
+    local function updateScale()
+        local vs=WS.CurrentCamera and WS.CurrentCamera.ViewportSize or Vector2.new(1280,720)
+        local targetW=isM and (vs.X*0.90) or vs.X
+        local targetH=isM and (vs.Y*0.80) or vs.Y
+        local sx=targetW/W local sy=targetH/H
+        local s=math.min(sx,sy,1)
+        uiscale.Scale=math.max(s,MIN_SCALE)
+    end
+    updateScale()
+    if WS.CurrentCamera then
+        WS.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+    end
+end
+
+buildMainGUI()
